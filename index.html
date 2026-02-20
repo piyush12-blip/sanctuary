@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Who Knows | Initializing</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        /* CSS Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; color: #fff; font-family: 'Helvetica', sans-serif; overflow: hidden; }
+
+        /* Fullscreen Video Engine */
+        #bg-container { position: fixed; inset: 0; z-index: -1; background: #000; }
+        video { 
+            position: absolute; width: 100%; height: 100%; object-fit: cover; 
+            opacity: 0; transition: opacity 1.5s ease-in-out; 
+        }
+        .active-video { opacity: 0.6; } /* Anime BG opacity */
+        .music-video { opacity: 1 !important; } /* 2B Video opacity */
+
+        /* Login Screen */
+        #login {
+            position: fixed; inset: 0; z-index: 100; background: #000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #pass-field {
+            background: none; border: none; border-bottom: 2px solid #222;
+            color: #fff; font-size: 2.5rem; text-align: center; outline: none;
+            letter-spacing: 12px; width: 260px; transition: 0.3s;
+        }
+        #pass-field:focus { border-bottom-color: #7000ff; }
+        
+        /* Main Title */
+        #hero { 
+            position: fixed; inset: 0; display: flex; align-items: center; 
+            justify-content: center; pointer-events: none; z-index: 10; 
+        }
+        h1 { font-size: 10vw; font-weight: 900; line-height: 0.8; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div id="login">
+        <p style="letter-spacing: 5px; color: #444; margin-bottom: 15px; font-size: 12px;">SYSTEM_ENTRY</p>
+        <input type="password" id="pass-field" maxlength="4" autocomplete="off">
+    </div>
+
+    <div id="bg-container">
+        <video id="v1" loop muted playsinline src="silent_bg.mp4"></video>
+        <video id="v2" loop playsinline src="music_mode.mp4"></video>
+    </div>
+
+    <div id="hero">
+        <h1 id="main-title">WHO<br>KNOWS</h1>
+    </div>
+
+    <script>
+        const passField = document.getElementById('pass-field');
+        const v1 = document.getElementById('v1');
+
+        passField.addEventListener('input', (e) => {
+            // Step 1: Check Password
+            if(e.target.value === "1234") {
+                unlockSystem();
+            }
+        });
+
+        function unlockSystem() {
+            // Fade out the login screen
+            gsap.to("#login", { 
+                opacity: 0, 
+                duration: 1, 
+                onComplete: () => {
+                    document.getElementById('login').remove();
+                    startV1();
+                }
+            });
+        }
+
+        function startV1() {
+            v1.classList.add('active-video');
+            
+            // The Stability Trick: Try playing, catch if blocked
+            const playPromise = v1.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                    // If browser blocks autoplay, it will play on first user click
+                    window.addEventListener('click', () => { v1.play(); }, { once: true });
+                });
+            }
+        }
+    </script>
+</body>
+</html>

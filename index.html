@@ -3,92 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Who Knows | Initializing</title>
+    <title>Who Knows | Sanctuary</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
-        /* CSS Reset */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; color: #fff; font-family: 'Helvetica', sans-serif; overflow: hidden; }
-
-        /* Fullscreen Video Engine */
-        #bg-container { position: fixed; inset: 0; z-index: -1; background: #000; }
-        video { 
-            position: absolute; width: 100%; height: 100%; object-fit: cover; 
-            opacity: 0; transition: opacity 1.5s ease-in-out; 
-        }
-        .active-video { opacity: 0.6; } /* Anime BG opacity */
-        .music-video { opacity: 1 !important; } /* 2B Video opacity */
-
-        /* Login Screen */
-        #login {
-            position: fixed; inset: 0; z-index: 100; background: #000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        #pass-field {
-            background: none; border: none; border-bottom: 2px solid #222;
-            color: #fff; font-size: 2.5rem; text-align: center; outline: none;
-            letter-spacing: 12px; width: 260px; transition: 0.3s;
-        }
-        #pass-field:focus { border-bottom-color: #7000ff; }
-        
-        /* Main Title */
-        #hero { 
-            position: fixed; inset: 0; display: flex; align-items: center; 
-            justify-content: center; pointer-events: none; z-index: 10; 
-        }
-        h1 { font-size: 10vw; font-weight: 900; line-height: 0.8; text-align: center; }
+        :root { --accent: #7000ff; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+        .grain { position: fixed; inset: 0; z-index: 90; pointer-events: none; background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_element_noise_fbm.png'); opacity: 0.05; animation: noise 0.2s infinite; }
+        @keyframes noise { 0%, 100% { transform: translate(0,0); } 10% { transform: translate(-1%,-1%); } }
+        #bg { position: fixed; inset: 0; z-index: -1; }
+        video { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: 2s; }
+        .active { opacity: 0.5 !important; }
+        #login { position: fixed; inset: 0; z-index: 100; background: #000; display: flex; align-items: center; justify-content: center; }
+        input { background: none; border: none; border-bottom: 2px solid #222; color: #fff; font-size: 2rem; text-align: center; outline: none; letter-spacing: 12px; width: 240px; }
+        h1 { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10vw; font-weight: 900; pointer-events: none; z-index: 10; color: var(--accent); }
     </style>
 </head>
 <body>
-
-    <div id="login">
-        <p style="letter-spacing: 5px; color: #444; margin-bottom: 15px; font-size: 12px;">SYSTEM_ENTRY</p>
-        <input type="password" id="pass-field" maxlength="4" autocomplete="off">
-    </div>
-
-    <div id="bg-container">
+    <div class="grain"></div>
+    <div id="login"><input type="password" id="pass" maxlength="4" autocomplete="off" placeholder="0000"></div>
+    <div id="bg">
         <video id="v1" loop muted playsinline src="silent_bg.mp4"></video>
-        <video id="v2" loop playsinline src="music_mode.mp4"></video>
     </div>
-
-    <div id="hero">
-        <h1 id="main-title">WHO<br>KNOWS</h1>
-    </div>
+    <h1 id="title">WHO<br>KNOWS</h1>
 
     <script>
-        const passField = document.getElementById('pass-field');
-        const v1 = document.getElementById('v1');
-
-        passField.addEventListener('input', (e) => {
-            // Step 1: Check Password
+        document.getElementById('pass').addEventListener('input', (e) => {
+            // MASTER CODE
             if(e.target.value === "1234") {
-                unlockSystem();
+                unlock("WHO<br>KNOWS", "#7000ff");
+            } 
+            // SPECIAL PERSON CODE
+            else if(e.target.value === "0000") {
+                unlock("FOR<br>YOU", "#ff0077"); 
             }
         });
 
-        function unlockSystem() {
-            // Fade out the login screen
-            gsap.to("#login", { 
-                opacity: 0, 
-                duration: 1, 
-                onComplete: () => {
-                    document.getElementById('login').remove();
-                    startV1();
-                }
-            });
-        }
-
-        function startV1() {
-            v1.classList.add('active-video');
-            
-            // The Stability Trick: Try playing, catch if blocked
-            const playPromise = v1.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(() => {
-                    // If browser blocks autoplay, it will play on first user click
-                    window.addEventListener('click', () => { v1.play(); }, { once: true });
+        function unlock(text, color) {
+            document.getElementById('title').innerHTML = text;
+            document.documentElement.style.setProperty('--accent', color);
+            gsap.to("#login", { opacity: 0, duration: 1.5, onComplete: () => {
+                document.getElementById('login').remove();
+                const v = document.getElementById('v1');
+                v.classList.add('active');
+                v.play().catch(() => {
+                    window.addEventListener('click', () => v.play(), {once: true});
                 });
-            }
+            }});
         }
     </script>
 </body>

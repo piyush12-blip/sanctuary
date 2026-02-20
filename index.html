@@ -6,50 +6,144 @@
     <title>Who Knows | Sanctuary</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
+        /* Dynamic Theme Color */
         :root { --accent: #7000ff; }
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
-        .grain { position: fixed; inset: 0; z-index: 90; pointer-events: none; background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_element_noise_fbm.png'); opacity: 0.05; animation: noise 0.2s infinite; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; color: #fff; font-family: 'Helvetica', sans-serif; overflow: hidden; }
+
+        /* Cinematic Film Grain Overlay */
+        .grain {
+            position: fixed; inset: 0; z-index: 90; pointer-events: none;
+            background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_element_noise_fbm.png');
+            opacity: 0.04; animation: noise 0.2s infinite;
+        }
         @keyframes noise { 0%, 100% { transform: translate(0,0); } 10% { transform: translate(-1%,-1%); } }
-        #bg { position: fixed; inset: 0; z-index: -1; }
-        video { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: 2s; }
-        .active { opacity: 0.5 !important; }
-        #login { position: fixed; inset: 0; z-index: 100; background: #000; display: flex; align-items: center; justify-content: center; }
-        input { background: none; border: none; border-bottom: 2px solid #222; color: #fff; font-size: 2rem; text-align: center; outline: none; letter-spacing: 12px; width: 240px; }
-        h1 { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10vw; font-weight: 900; pointer-events: none; z-index: 10; color: var(--accent); }
+
+        /* Background Video Engine */
+        #bg-container { position: fixed; inset: 0; z-index: -1; background: #000; }
+        video { 
+            position: absolute; width: 100%; height: 100%; object-fit: cover; 
+            opacity: 0; transition: opacity 2s ease-in-out; 
+        }
+        .active-v1 { opacity: 0.5 !important; }
+        .active-v2 { opacity: 1 !important; }
+
+        /* Login Interface */
+        #login { 
+            position: fixed; inset: 0; z-index: 100; background: #000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        }
+        #status-text { letter-spacing: 8px; color: #555; margin-bottom: 20px; font-size: 10px; }
+        #pass { 
+            background: none; border: none; border-bottom: 2px solid #222; 
+            color: #fff; text-align: center; font-size: 2.5rem; outline: none; 
+            letter-spacing: 12px; width: 260px; transition: border-color 0.3s; 
+        }
+        #pass:focus { border-bottom-color: var(--accent); }
+        
+        /* Main Typography */
+        #hero { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 10; }
+        h1 { font-size: 12vw; font-weight: 900; line-height: 0.8; text-align: center; color: var(--accent); transition: color 1s; }
+
+        /* Music Mode Button */
+        #ui-layer { position: fixed; bottom: 40px; right: 40px; z-index: 95; display: none; }
+        .music-btn {
+            padding: 12px 25px; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.6); color: #fff; cursor: pointer;
+            border-radius: 50px; font-size: 10px; letter-spacing: 3px;
+            backdrop-filter: blur(10px); transition: 0.3s;
+        }
+        .music-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--accent); }
     </style>
 </head>
 <body>
+
     <div class="grain"></div>
-    <div id="login"><input type="password" id="pass" maxlength="4" autocomplete="off" placeholder="0000"></div>
-    <div id="bg">
-        <video id="v1" loop muted playsinline src="silent_bg.mp4"></video>
+
+    <div id="login">
+        <p id="status-text">SYSTEM_ENTRY</p>
+        <input type="password" id="pass" maxlength="4" autocomplete="off" placeholder="----">
     </div>
-    <h1 id="title">WHO<br>KNOWS</h1>
+
+    <div id="bg-container">
+        <video id="v1" loop muted playsinline src="silent_bg.mp4"></video>
+        <video id="v2" loop playsinline src="music_mode.mp4"></video>
+    </div>
+
+    <div id="hero"><h1 id="title">WHO<br>KNOWS</h1></div>
+
+    <div id="ui-layer">
+        <button class="music-btn" onclick="activateMusic()">ENABLE MUSIC MODE</button>
+    </div>
 
     <script>
-        document.getElementById('pass').addEventListener('input', (e) => {
-            // MASTER CODE
-            if(e.target.value === "1234") {
-                unlock("WHO<br>KNOWS", "#7000ff");
+        const passField = document.getElementById('pass');
+        const v1 = document.getElementById('v1');
+        const v2 = document.getElementById('v2');
+        const title = document.getElementById('title');
+        const uiLayer = document.getElementById('ui-layer');
+        const loginScreen = document.getElementById('login');
+
+        // Listen for passcode input
+        passField.addEventListener('input', (e) => {
+            const code = e.target.value;
+            
+            // 🟣 CODE 1: MASTER (You)
+            if(code === "1234") {
+                unlockSystem("WHO<br>KNOWS", "#7000ff"); // Purple Theme
             } 
-            // SPECIAL PERSON CODE
-            else if(e.target.value === "0000") {
-                unlock("FOR<br>YOU", "#ff0077"); 
+            // 🌸 CODE 2: SPECIAL PERSON (Her/Him)
+            else if(code === "0000") {
+                unlockSystem("FOR<br>YOU", "#ff0077"); // Pink Theme
             }
         });
 
-        function unlock(text, color) {
-            document.getElementById('title').innerHTML = text;
+        function unlockSystem(text, color) {
+            // 1. Change text and theme color
+            title.innerHTML = text;
             document.documentElement.style.setProperty('--accent', color);
-            gsap.to("#login", { opacity: 0, duration: 1.5, onComplete: () => {
-                document.getElementById('login').remove();
-                const v = document.getElementById('v1');
-                v.classList.add('active');
-                v.play().catch(() => {
-                    window.addEventListener('click', () => v.play(), {once: true});
-                });
-            }});
+            
+            // 2. Fade out the login screen smoothly
+            gsap.to(loginScreen, { 
+                opacity: 0, 
+                duration: 1.5, 
+                onComplete: () => {
+                    loginScreen.remove();
+                    uiLayer.style.display = 'block'; // Show the music button
+                    
+                    // 3. Reveal and play the silent background video
+                    v1.classList.add('active-v1');
+                    
+                    // Force play and handle browser autoplay blocks
+                    const playPromise = v1.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(() => {
+                            console.log("Autoplay blocked. Waiting for user click.");
+                            // If blocked, play on the first click anywhere on the screen
+                            window.addEventListener('click', () => { v1.play(); }, { once: true });
+                        });
+                    }
+                }
+            });
         }
+
+        // Switch to the loud music video
+        window.activateMusic = () => {
+            // Fade out silent video
+            v1.classList.remove('active-v1');
+            setTimeout(() => v1.pause(), 1000);
+            
+            // Fade in music video and enable sound
+            v2.classList.add('active-v2');
+            v2.muted = false; 
+            v2.play();
+            
+            // Turn button into a refresh switch
+            const btn = document.querySelector('.music-btn');
+            btn.innerText = "SYSTEM REBOOT";
+            btn.style.borderColor = "#ff0000";
+            btn.onclick = () => location.reload(); 
+        };
     </script>
 </body>
 </html>

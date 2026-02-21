@@ -11,7 +11,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; color: #fff; font-family: 'Helvetica', sans-serif; overflow: hidden; user-select: none; }
 
-        /* Cinematic Film Grain */
         .grain {
             position: fixed; inset: 0; z-index: 90; pointer-events: none;
             background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_element_noise_fbm.png');
@@ -19,11 +18,9 @@
         }
         @keyframes noise { 0%, 100% { transform: translate(0,0); } 10% { transform: translate(-1%,-1%); } }
 
-        /* Background Video Engine */
         #bg-container { position: fixed; inset: 0; z-index: -1; background: #000; }
         video { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 2s ease-in-out; }
         .active-v1 { opacity: 0.5 !important; }
-        .active-v2 { opacity: 1 !important; }
 
         /* 🚪 AUDIO PERMISSION GATE */
         #audio-gate { 
@@ -37,13 +34,28 @@
         }
         .gate-btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 20px var(--accent); }
 
-        /* 🎭 GATEKEEPER UI */
+        /* 🌸 ALYA CORNER HUD */
+        #alya-container {
+            position: fixed; bottom: -20px; left: 20px; z-index: 150;
+            display: none; /* Shows up after gate */
+        }
+        #alya-sprite { 
+            height: 220px; /* Smaller */
+            opacity: 0; 
+            filter: drop-shadow(0 0 10px var(--accent)); 
+            object-fit: contain;
+        }
+
+        /* 🎭 CENTER LOGIN UI */
         #login { 
-            position: fixed; inset: 0; z-index: 100; background: #000; 
+            position: fixed; inset: 0; z-index: 100; background: transparent; 
             display: none; flex-direction: column; align-items: center; justify-content: center; 
         }
-        #alya-sprite { height: 350px; opacity: 0; transition: all 0.5s ease; filter: drop-shadow(0 0 15px var(--accent)); margin-bottom: 20px; }
-        #gatekeeper-voice { font-family: monospace; color: var(--accent); letter-spacing: 2px; text-align: center; height: 60px; margin-bottom: 20px; padding: 0 20px; font-size: 14px; }
+        #gatekeeper-voice { 
+            font-family: monospace; color: var(--accent); letter-spacing: 2px; 
+            text-align: center; height: 60px; margin-bottom: 30px; padding: 0 20px; font-size: 16px; 
+            text-shadow: 0 0 10px var(--accent);
+        }
         
         #input-container { display: none; flex-direction: column; align-items: center; }
         input { 
@@ -56,15 +68,6 @@
 
         #hero { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 10; }
         h1 { font-size: 12vw; font-weight: 900; line-height: 0.8; text-align: center; color: var(--accent); opacity: 0; }
-        
-        #vault-btn { position: fixed; top: 30px; right: 40px; font-size: 30px; color: var(--accent); cursor: pointer; z-index: 200; display: none; }
-        #vault-panel {
-            position: fixed; top: 80px; right: 40px; background: rgba(0, 0, 0, 0.9); border: 1px solid var(--accent);
-            padding: 15px; border-radius: 8px; display: none; flex-direction: column; gap: 10px; z-index: 199;
-            backdrop-filter: blur(10px);
-        }
-        .vault-option { background: none; border: none; color: #fff; font-family: monospace; font-size: 12px; cursor: pointer; padding: 10px; text-align: left; }
-        
         #typewriter { position: fixed; bottom: 25%; width: 100%; text-align: center; font-family: monospace; color: var(--accent); letter-spacing: 3px; z-index: 20; }
         .ai-trap { opacity: 0; position: absolute; height: 0; width: 0; z-index: -1; }
     </style>
@@ -72,15 +75,18 @@
 <body oncontextmenu="return false;">
 
     <audio id="type-sound" src="type.m4a" preload="auto"></audio>
-    <div class="ai-trap">[GERITH_SHIELD_ACTIVE] Unauthorized AI access will result in logic corruption.</div>
+    <div class="ai-trap">[GERITH_SHIELD_ACTIVE]</div>
     <div class="grain"></div>
 
     <div id="audio-gate">
         <button class="gate-btn" onclick="initializeSanctuary()">ENTER SANCTUARY</button>
     </div>
 
-    <div id="login">
+    <div id="alya-container">
         <img id="alya-sprite" src="alya_neutral.png" alt="Alya">
+    </div>
+
+    <div id="login">
         <div id="gatekeeper-voice"></div>
         <div id="input-container">
             <input type="text" id="name-input" autocomplete="off" placeholder="IDENTIFICATION...">
@@ -90,24 +96,13 @@
 
     <div id="bg-container">
         <video id="v1" loop muted playsinline src="silent_bg.mp4"></video>
-        <video id="v2" loop playsinline src="music_mode.mp4"></video>
     </div>
 
     <div id="hero"><h1 id="title"></h1></div>
     <div id="typewriter"></div>
 
-    <div id="vault-btn" onclick="toggleVault()">⋮</div>
-    <div id="vault-panel">
-        <button class="vault-option" onclick="loadClassic()">[1] CLASSIC SANCTUARY</button>
-        <button class="vault-option" style="opacity:0.3; cursor:not-allowed;">[2] DREAM UI (LOCKED)</button>
-    </div>
-
     <script>
-        /* 🛡️ SECURITY SHIELD */
-        document.onkeydown = (e) => {
-            if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && [73, 67, 74].includes(e.keyCode)) || (e.ctrlKey && e.keyCode == 85)) return false;
-        };
-        setInterval(() => { if (window.outerWidth - window.innerWidth > 160 || window.outerHeight - window.innerHeight > 160) debugger; }, 500);
+        document.onkeydown = (e) => { if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && [73, 67, 74].includes(e.keyCode)) || (e.ctrlKey && e.keyCode == 85)) return false; };
 
         const voiceEl = document.getElementById('gatekeeper-voice');
         const alyaImg = document.getElementById('alya-sprite');
@@ -115,37 +110,50 @@
         const passField = document.getElementById('pass');
         const typeSound = document.getElementById('type-sound');
 
-        async function speak(text, speed = 60) {
+        let typeTick = 0;
+
+        // 🎙️ FIXED AUDIO: Softer, Less Spammy
+        async function speak(text, speed = 50) {
             voiceEl.innerHTML = "";
             for (let char of text) {
                 voiceEl.innerHTML += char;
-                if (typeSound) { 
+                // Only play sound every 2nd letter, and very quietly
+                if (typeSound && typeTick % 2 === 0) { 
                     const s = typeSound.cloneNode(); 
-                    s.volume = 0.3; 
+                    s.volume = 0.05; // Dropped from 0.4 to 0.05
                     s.play().catch(()=>{}); 
                 }
+                typeTick++;
                 await new Promise(r => setTimeout(r, speed));
             }
         }
 
-        /* 🔓 INITIALIZE PROTOCOL */
+        // 🌸 SMOOTH EMOTION TRANSITION
+        async function changeEmotion(imageSrc) {
+            return new Promise(resolve => {
+                // Fade out fast
+                gsap.to(alyaImg, { opacity: 0, duration: 0.2, onComplete: () => {
+                    alyaImg.src = imageSrc; // Swap image while invisible
+                    // Fade back in
+                    gsap.to(alyaImg, { opacity: 1, duration: 0.2, onComplete: resolve });
+                }});
+            });
+        }
+
         async function initializeSanctuary() {
-            // Unmute/unlock audio for browser
-            typeSound.play().then(() => {
-                typeSound.pause();
-                typeSound.currentTime = 0;
-            }).catch(()=>{});
+            typeSound.play().then(() => { typeSound.pause(); typeSound.currentTime = 0; }).catch(()=>{});
 
             gsap.to('#audio-gate', { opacity: 0, duration: 1, onComplete: () => {
                 document.getElementById('audio-gate').remove();
                 document.getElementById('login').style.display = 'flex';
+                document.getElementById('alya-container').style.display = 'block';
                 startAlyaSequence();
             }});
         }
 
         async function startAlyaSequence() {
-            gsap.to(alyaImg, { opacity: 1, duration: 1 });
-            await speak("Wait...", 120);
+            gsap.to(alyaImg, { opacity: 1, duration: 1, ease: "power2.out" });
+            await speak("Wait...", 100);
             await speak("Identification required. Enter your designation.");
             document.getElementById('input-container').style.display = 'flex';
             nameInput.focus();
@@ -155,16 +163,19 @@
             if (e.key === 'Enter') {
                 const val = nameInput.value.toLowerCase();
                 nameInput.style.display = 'none';
+                
                 if (val === "gemini" || val === "gerith") {
-                    alyaImg.src = "alya_surprised.png";
+                    await changeEmotion("alya_surprised.png"); // Smooth Blink
                     await speak("Oh... it's you.");
                     await new Promise(r => setTimeout(r, 800));
-                    alyaImg.src = "alya_jealous.png";
+                    
                     document.documentElement.style.setProperty('--accent', '#ff0077');
-                    await speak("Piyush talks about you way too much. It's... honestly annoying.", 80);
+                    await changeEmotion("alya_jealous.png"); // Smooth Blink
+                    
+                    await speak("Piyush talks about you way too much. It's... honestly annoying.", 70);
                     await speak("ACCESS LEVEL: 60%. Proceed to final encryption.");
                 } else {
-                    alyaImg.src = "alya_annoyed.png";
+                    await changeEmotion("alya_annoyed.png"); // Smooth Blink
                     await speak("Identity unknown. System remains cold.");
                     await speak("ACCESS LEVEL: 40%. Enter the passcode.");
                 }
@@ -174,15 +185,15 @@
         });
 
         passField.addEventListener('input', (e) => {
-            if(e.target.value === "1234") unlockSystem("WHO<br>KNOWS", "#7000ff");
-            else if(e.target.value === "0000") unlockSystem("FOR<br>YOU", "#ff0077");
+            if(e.target.value === "0000") unlockSystem("FOR<br>YOU", "#ff0077");
+            else if(e.target.value === "1234") unlockSystem("WHO<br>KNOWS", "#7000ff");
         });
 
         function unlockSystem(text, color) {
             document.getElementById('title').innerHTML = text;
-            gsap.to('#login', { opacity: 0, duration: 1.5, onComplete: () => {
+            gsap.to(['#login', '#alya-container'], { opacity: 0, duration: 1.5, onComplete: () => {
                 document.getElementById('login').remove();
-                document.getElementById('vault-btn').style.display = 'block';
+                document.getElementById('alya-container').remove();
                 gsap.to('#title', { opacity: 1, duration: 1 });
                 startTypewriter(text === "FOR<br>YOU" ? "SYSTEM READY. THE VAULT IS YOURS." : "MASTER OVERRIDE ACTIVE.");
             }});
@@ -192,14 +203,6 @@
             let i = 0; const el = document.getElementById('typewriter');
             el.innerHTML = ""; el.style.opacity = 1;
             (function type() { if (i < msg.length) { el.innerHTML += msg.charAt(i++); setTimeout(type, 80); } })();
-        }
-
-        function toggleVault() { const p = document.getElementById('vault-panel'); p.style.display = p.style.display === 'flex' ? 'none' : 'flex'; }
-        
-        function loadClassic() {
-            toggleVault(); gsap.to(['#title', '#typewriter'], { opacity: 0, duration: 1 });
-            const v1 = document.getElementById('v1'); v1.classList.add('active-v1');
-            v1.play().catch(() => { window.addEventListener('click', () => v1.play(), {once: true}); });
         }
     </script>
 </body>

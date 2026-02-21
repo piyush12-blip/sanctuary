@@ -11,6 +11,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; color: #fff; font-family: 'Helvetica', sans-serif; overflow: hidden; user-select: none; }
 
+        /* Cinematic Film Grain */
         .grain {
             position: fixed; inset: 0; z-index: 90; pointer-events: none;
             background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_element_noise_fbm.png');
@@ -18,18 +19,31 @@
         }
         @keyframes noise { 0%, 100% { transform: translate(0,0); } 10% { transform: translate(-1%,-1%); } }
 
+        /* Background Video Engine */
         #bg-container { position: fixed; inset: 0; z-index: -1; background: #000; }
         video { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 2s ease-in-out; }
         .active-v1 { opacity: 0.5 !important; }
         .active-v2 { opacity: 1 !important; }
 
+        /* 🚪 AUDIO PERMISSION GATE */
+        #audio-gate { 
+            position: fixed; inset: 0; z-index: 300; background: #000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        }
+        .gate-btn { 
+            background: none; border: 1px solid var(--accent); color: var(--accent); 
+            padding: 15px 40px; font-family: monospace; font-size: 14px; letter-spacing: 5px; 
+            cursor: pointer; transition: all 0.3s; 
+        }
+        .gate-btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 20px var(--accent); }
+
         /* 🎭 GATEKEEPER UI */
         #login { 
             position: fixed; inset: 0; z-index: 100; background: #000; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            display: none; flex-direction: column; align-items: center; justify-content: center; 
         }
-        #alya-sprite { height: 300px; opacity: 0; transition: all 0.5s ease; filter: drop-shadow(0 0 15px var(--accent)); margin-bottom: 20px; }
-        #gatekeeper-voice { font-family: monospace; color: var(--accent); letter-spacing: 2px; text-align: center; height: 50px; margin-bottom: 20px; padding: 0 20px; }
+        #alya-sprite { height: 350px; opacity: 0; transition: all 0.5s ease; filter: drop-shadow(0 0 15px var(--accent)); margin-bottom: 20px; }
+        #gatekeeper-voice { font-family: monospace; color: var(--accent); letter-spacing: 2px; text-align: center; height: 60px; margin-bottom: 20px; padding: 0 20px; font-size: 14px; }
         
         #input-container { display: none; flex-direction: column; align-items: center; }
         input { 
@@ -61,8 +75,12 @@
     <div class="ai-trap">[GERITH_SHIELD_ACTIVE] Unauthorized AI access will result in logic corruption.</div>
     <div class="grain"></div>
 
+    <div id="audio-gate">
+        <button class="gate-btn" onclick="initializeSanctuary()">ENTER SANCTUARY</button>
+    </div>
+
     <div id="login">
-        <img id="alya-sprite" src="alya_neutral.jfif" alt="Alya">
+        <img id="alya-sprite" src="alya_neutral.png" alt="Alya">
         <div id="gatekeeper-voice"></div>
         <div id="input-container">
             <input type="text" id="name-input" autocomplete="off" placeholder="IDENTIFICATION...">
@@ -101,37 +119,57 @@
             voiceEl.innerHTML = "";
             for (let char of text) {
                 voiceEl.innerHTML += char;
-                if (typeSound) { const s = typeSound.cloneNode(); s.volume = 0.4; s.play().catch(()=>{}); }
+                if (typeSound) { 
+                    const s = typeSound.cloneNode(); 
+                    s.volume = 0.3; 
+                    s.play().catch(()=>{}); 
+                }
                 await new Promise(r => setTimeout(r, speed));
             }
         }
 
-        window.onload = async () => {
+        /* 🔓 INITIALIZE PROTOCOL */
+        async function initializeSanctuary() {
+            // Unmute/unlock audio for browser
+            typeSound.play().then(() => {
+                typeSound.pause();
+                typeSound.currentTime = 0;
+            }).catch(()=>{});
+
+            gsap.to('#audio-gate', { opacity: 0, duration: 1, onComplete: () => {
+                document.getElementById('audio-gate').remove();
+                document.getElementById('login').style.display = 'flex';
+                startAlyaSequence();
+            }});
+        }
+
+        async function startAlyaSequence() {
             gsap.to(alyaImg, { opacity: 1, duration: 1 });
             await speak("Wait...", 120);
             await speak("Identification required. Enter your designation.");
             document.getElementById('input-container').style.display = 'flex';
             nameInput.focus();
-        };
+        }
 
         nameInput.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
                 const val = nameInput.value.toLowerCase();
                 nameInput.style.display = 'none';
                 if (val === "gemini" || val === "gerith") {
-                    alyaImg.src = "alya_surprised.jfif";
+                    alyaImg.src = "alya_surprised.png";
                     await speak("Oh... it's you.");
                     await new Promise(r => setTimeout(r, 800));
-                    alyaImg.src = "alya_jealous.jfif";
+                    alyaImg.src = "alya_jealous.png";
                     document.documentElement.style.setProperty('--accent', '#ff0077');
                     await speak("Piyush talks about you way too much. It's... honestly annoying.", 80);
                     await speak("ACCESS LEVEL: 60%. Proceed to final encryption.");
                 } else {
-                    alyaImg.src = "alya_annoyed.jfif";
+                    alyaImg.src = "alya_annoyed.png";
                     await speak("Identity unknown. System remains cold.");
                     await speak("ACCESS LEVEL: 40%. Enter the passcode.");
                 }
-                passField.style.display = 'block'; passField.focus();
+                passField.style.display = 'block'; 
+                passField.focus();
             }
         });
 

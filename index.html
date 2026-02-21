@@ -52,6 +52,28 @@
             transition: 0.3s;
         }
 
+        /* 🗄️ THE VAULT MENU STYLES */
+        #vault-btn {
+            position: fixed; top: 30px; right: 40px; font-size: 30px;
+            color: var(--accent); cursor: pointer; z-index: 200;
+            display: none; transition: 0.3s; text-shadow: 0 0 10px var(--accent);
+        }
+        #vault-btn:hover { transform: scale(1.2); }
+        
+        #vault-panel {
+            position: fixed; top: 80px; right: 40px;
+            background: rgba(0, 0, 0, 0.9); border: 1px solid var(--accent);
+            padding: 15px; border-radius: 8px; display: none;
+            flex-direction: column; gap: 10px; z-index: 199;
+            backdrop-filter: blur(10px); box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        .vault-option {
+            background: none; border: none; color: #fff;
+            font-family: monospace; font-size: 12px; text-align: left;
+            cursor: pointer; padding: 10px; transition: 0.3s; letter-spacing: 1px;
+        }
+        .vault-option:hover { color: var(--accent); padding-left: 20px; }
+
         /* Music Mode Button */
         #ui-layer { position: fixed; bottom: 40px; right: 40px; z-index: 95; display: none; }
         .music-btn {
@@ -88,6 +110,12 @@
 
     <div id="typewriter"></div>
 
+    <div id="vault-btn" onclick="toggleVault()">⋮</div>
+    <div id="vault-panel">
+        <button class="vault-option" onclick="loadClassic()">[1] CLASSIC SANCTUARY</button>
+        <button class="vault-option" style="opacity:0.3; cursor:not-allowed;">[2] DREAM UI (LOCKED)</button>
+    </div>
+
     <div id="ui-layer">
         <button class="music-btn" onclick="activateMusic()">ENABLE MUSIC MODE</button>
     </div>
@@ -99,12 +127,37 @@
         const title = document.getElementById('title');
         const uiLayer = document.getElementById('ui-layer');
         const loginScreen = document.getElementById('login');
+        const typewriterEl = document.getElementById('typewriter');
 
         passField.addEventListener('input', (e) => {
             const code = e.target.value;
             if(code === "1234") unlockSystem("WHO<br>KNOWS", "#7000ff");
             else if(code === "0000") unlockSystem("FOR<br>YOU", "#ff0077");
         });
+
+        // 🗄️ VAULT LOGIC
+        let vaultOpen = false;
+        function toggleVault() {
+            const panel = document.getElementById('vault-panel');
+            vaultOpen = !vaultOpen;
+            panel.style.display = vaultOpen ? 'flex' : 'none';
+        }
+
+        // ⏪ LOAD CLASSIC SANCTUARY
+        function loadClassic() {
+            toggleVault();
+            gsap.to([title, typewriterEl], { opacity: 0, duration: 1 });
+            
+            // Activate the original background and music UI
+            uiLayer.style.display = 'block';
+            v1.classList.add('active-v1');
+            const playPromise = v1.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                    window.addEventListener('click', () => { v1.play(); }, { once: true });
+                });
+            }
+        }
 
         function unlockSystem(text, color) {
             title.innerHTML = text;
@@ -115,19 +168,14 @@
                 duration: 1.5, 
                 onComplete: () => {
                     loginScreen.remove();
-                    uiLayer.style.display = 'block';
-                    v1.classList.add('active-v1');
                     
-                    const playPromise = v1.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(() => {
-                            window.addEventListener('click', () => { v1.play(); }, { once: true });
-                        });
-                    }
-
-                    // ⌨️ START TYPEWRITER FOR SPECIAL CODE
+                    // CLEAN UI START
+                    document.getElementById('vault-btn').style.display = 'block';
+                    
                     if (text === "FOR<br>YOU") {
-                        startTypewriter("ACCESS GRANTED. I'VE BEEN WAITING FOR YOU...");
+                        startTypewriter("SYSTEM READY. OPEN THE VAULT TO PROCEED...");
+                    } else {
+                        startTypewriter("MASTER OVERRIDE ACTIVE.");
                     }
                 }
             });
@@ -135,15 +183,16 @@
 
         function startTypewriter(msg) {
             let i = 0;
-            const element = document.getElementById('typewriter');
+            typewriterEl.innerHTML = ""; // Clear existing
+            typewriterEl.style.opacity = 1;
             function type() {
                 if (i < msg.length) {
-                    element.innerHTML += msg.charAt(i);
+                    typewriterEl.innerHTML += msg.charAt(i);
                     i++;
                     setTimeout(type, 80);
                 }
             }
-            setTimeout(type, 1500); // Small delay after entrance
+            setTimeout(type, 500); 
         }
 
         window.activateMusic = () => {

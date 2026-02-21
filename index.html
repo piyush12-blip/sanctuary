@@ -11,7 +11,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; color: #fff; font-family: 'Helvetica', sans-serif; overflow: hidden; user-select: none; }
 
-        /* Cinematic Film Grain */
         .grain {
             position: fixed; inset: 0; z-index: 90; pointer-events: none;
             background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_element_noise_fbm.png');
@@ -19,16 +18,12 @@
         }
         @keyframes noise { 0%, 100% { transform: translate(0,0); } 10% { transform: translate(-1%,-1%); } }
 
-        /* Background Video Engine */
         #bg-container { position: fixed; inset: 0; z-index: -1; background: #000; }
         video { 
             position: absolute; width: 100%; height: 100%; object-fit: cover; 
-            opacity: 0; transition: opacity 2s ease-in-out; 
+            opacity: 0; /* Handled by GSAP now */
         }
-        .active-v1 { opacity: 0.4 !important; } /* Dimmed for atmospheric look */
-        .active-v2 { opacity: 0.8 !important; }
 
-        /* 🎭 LOGIN UI */
         #login { 
             position: fixed; inset: 0; z-index: 100; background: #000; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
@@ -40,7 +35,6 @@
         }
         input:focus { border-bottom-color: var(--accent); }
 
-        /* 🏛️ VAULT INTERFACE */
         #vault-btn { position: fixed; top: 30px; right: 40px; font-size: 30px; color: var(--accent); cursor: pointer; z-index: 200; display: none; }
         #vault-panel {
             position: fixed; top: 80px; right: 40px; background: rgba(0, 0, 0, 0.9); border: 1px solid var(--accent);
@@ -50,7 +44,6 @@
         .vault-option { background: none; border: none; color: #fff; font-family: monospace; font-size: 11px; cursor: pointer; padding: 10px; text-align: left; opacity: 0.7; transition: 0.3s; }
         .vault-option:hover { opacity: 1; color: var(--accent); }
 
-        /* 🎵 MUSIC LAYER */
         #ui-layer { position: fixed; bottom: 40px; width: 100%; text-align: center; display: none; z-index: 150; }
         .music-btn { 
             background: none; border: 1px solid var(--accent); color: var(--accent); 
@@ -98,7 +91,6 @@
         const loginScreen = document.getElementById('login');
         const typewriterEl = document.getElementById('typewriter');
 
-        // Security: Block F12
         document.onkeydown = (e) => { if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && [73, 67, 74].includes(e.keyCode)) || (e.ctrlKey && e.keyCode == 85)) return false; };
 
         passField.addEventListener('input', (e) => {
@@ -110,7 +102,6 @@
         function unlockSystem(text, color) {
             title.innerHTML = text;
             document.documentElement.style.setProperty('--accent', color);
-            
             gsap.to(loginScreen, { 
                 opacity: 0, 
                 duration: 1.5, 
@@ -133,24 +124,26 @@
         function loadClassic() {
             toggleVault();
             gsap.to([title, typewriterEl], { opacity: 0, duration: 1 });
-            
             uiLayer.style.display = 'block';
-            v1.classList.add('active-v1');
+            
+            // Initial Fade In of Video 1
+            gsap.to(v1, { opacity: 0.4, duration: 2 });
             v1.play().catch(() => {
                 window.addEventListener('click', () => { v1.play(); }, { once: true });
             });
         }
 
-        // 🎵 THE MISSING MUSIC LOGIC (FIXED)
         window.activateMusic = () => {
-            gsap.to(v1, { opacity: 0, duration: 2 }); // Fade out silent video
-            v1.pause();
+            // THE CROSSFADE FIX:
+            // Fade out v1 and pause it when done
+            gsap.to(v1, { opacity: 0, duration: 1.5, onComplete: () => v1.pause() });
             
-            v2.classList.add('active-v2');
-            v2.play(); // Play music video
+            // Fade in v2 (music mode)
+            gsap.to(v2, { opacity: 0.8, duration: 2 });
+            v2.play();
             
-            uiLayer.style.opacity = 0;
-            setTimeout(() => { uiLayer.remove(); }, 1000); // Hide button after use
+            // Remove the UI button smoothly
+            gsap.to(uiLayer, { opacity: 0, duration: 1, onComplete: () => uiLayer.remove() });
         };
 
         function startTypewriter(msg) {

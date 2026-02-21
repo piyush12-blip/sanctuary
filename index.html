@@ -1,12 +1,68 @@
-yling */
-        #typewriter { 
-            position: fixed; bottom: 25%; width: 100%; text-align: center; 
-            font-family: monospace; color: var(--accent); letter-spacing: 3px; 
-            z-index: 20; font-size: 14px; text-transform: uppercase;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, noarchive, noimageindex, nosnippet">
+    <title>Who Knows | Sanctuary</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        :root { --accent: #7000ff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; color: #fff; font-family: 'Helvetica', sans-serif; overflow: hidden; user-select: none; }
+
+        /* Cinematic Film Grain */
+        .grain {
+            position: fixed; inset: 0; z-index: 90; pointer-events: none;
+            background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_element_noise_fbm.png');
+            opacity: 0.04; animation: noise 0.2s infinite;
         }
+        @keyframes noise { 0%, 100% { transform: translate(0,0); } 10% { transform: translate(-1%,-1%); } }
+
+        /* Background Video Engine */
+        #bg-container { position: fixed; inset: 0; z-index: -1; background: #000; }
+        video { 
+            position: absolute; width: 100%; height: 100%; object-fit: cover; 
+            opacity: 0; transition: opacity 2s ease-in-out; 
+        }
+        .active-v1 { opacity: 0.4 !important; } /* Dimmed for atmospheric look */
+        .active-v2 { opacity: 0.8 !important; }
+
+        /* 🎭 LOGIN UI */
+        #login { 
+            position: fixed; inset: 0; z-index: 100; background: #000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        }
+        #status-text { font-family: monospace; color: var(--accent); letter-spacing: 5px; margin-bottom: 20px; font-size: 12px; }
+        input { 
+            background: none; border: none; border-bottom: 1px solid #222; color: #fff; 
+            text-align: center; outline: none; transition: 0.3s; font-size: 2rem; letter-spacing: 15px; width: 240px;
+        }
+        input:focus { border-bottom-color: var(--accent); }
+
+        /* 🏛️ VAULT INTERFACE */
+        #vault-btn { position: fixed; top: 30px; right: 40px; font-size: 30px; color: var(--accent); cursor: pointer; z-index: 200; display: none; }
+        #vault-panel {
+            position: fixed; top: 80px; right: 40px; background: rgba(0, 0, 0, 0.9); border: 1px solid var(--accent);
+            padding: 15px; border-radius: 8px; display: none; flex-direction: column; gap: 10px; z-index: 199;
+            backdrop-filter: blur(10px);
+        }
+        .vault-option { background: none; border: none; color: #fff; font-family: monospace; font-size: 11px; cursor: pointer; padding: 10px; text-align: left; opacity: 0.7; transition: 0.3s; }
+        .vault-option:hover { opacity: 1; color: var(--accent); }
+
+        /* 🎵 MUSIC LAYER */
+        #ui-layer { position: fixed; bottom: 40px; width: 100%; text-align: center; display: none; z-index: 150; }
+        .music-btn { 
+            background: none; border: 1px solid var(--accent); color: var(--accent); 
+            padding: 10px 25px; font-family: monospace; cursor: pointer; font-size: 10px; letter-spacing: 3px;
+        }
+
+        #hero { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 10; }
+        h1 { font-size: 10vw; font-weight: 900; text-align: center; color: var(--accent); opacity: 0; line-height: 0.9; }
+        #typewriter { position: fixed; bottom: 25%; width: 100%; text-align: center; font-family: monospace; color: var(--accent); letter-spacing: 3px; z-index: 20; font-size: 13px; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
     <div class="grain"></div>
 
@@ -20,14 +76,13 @@ yling */
         <video id="v2" loop playsinline src="music_mode.mp4"></video>
     </div>
 
-    <div id="hero"><h1 id="title">WHO<br>KNOWS</h1></div>
-
+    <div id="hero"><h1 id="title"></h1></div>
     <div id="typewriter"></div>
 
     <div id="vault-btn" onclick="toggleVault()">⋮</div>
     <div id="vault-panel">
-        <button class="vault-option" onclick="loadClassic()">[1] CLASSIC SANCTUARY</button>
-        <button class="vault-option" style="opacity:0.3; cursor:not-allowed;">[2] DREAM UI (LOCKED)</button>
+        <button class="vault-option" onclick="loadClassic()">[1] INITIALIZE AMBIENCE</button>
+        <button class="vault-option" style="opacity:0.2; cursor:not-allowed;">[2] DREAM_UI (LOCKED)</button>
     </div>
 
     <div id="ui-layer">
@@ -43,35 +98,14 @@ yling */
         const loginScreen = document.getElementById('login');
         const typewriterEl = document.getElementById('typewriter');
 
+        // Security: Block F12
+        document.onkeydown = (e) => { if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && [73, 67, 74].includes(e.keyCode)) || (e.ctrlKey && e.keyCode == 85)) return false; };
+
         passField.addEventListener('input', (e) => {
             const code = e.target.value;
             if(code === "1234") unlockSystem("WHO<br>KNOWS", "#7000ff");
             else if(code === "0000") unlockSystem("FOR<br>YOU", "#ff0077");
         });
-
-        // 🗄️ VAULT LOGIC
-        let vaultOpen = false;
-        function toggleVault() {
-            const panel = document.getElementById('vault-panel');
-            vaultOpen = !vaultOpen;
-            panel.style.display = vaultOpen ? 'flex' : 'none';
-        }
-
-        // ⏪ LOAD CLASSIC SANCTUARY
-        function loadClassic() {
-            toggleVault();
-            gsap.to([title, typewriterEl], { opacity: 0, duration: 1 });
-            
-            // Activate the original background and music UI
-            uiLayer.style.display = 'block';
-            v1.classList.add('active-v1');
-            const playPromise = v1.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(() => {
-                    window.addEventListener('click', () => { v1.play(); }, { once: true });
-                });
-            }
-        }
 
         function unlockSystem(text, color) {
             title.innerHTML = text;
@@ -82,22 +116,46 @@ yling */
                 duration: 1.5, 
                 onComplete: () => {
                     loginScreen.remove();
-                    
-                    // CLEAN UI START
                     document.getElementById('vault-btn').style.display = 'block';
-                    
-                    if (text === "FOR<br>YOU") {
-                        startTypewriter("SYSTEM READY. OPEN THE VAULT TO PROCEED...");
-                    } else {
-                        startTypewriter("MASTER OVERRIDE ACTIVE.");
-                    }
+                    gsap.to(title, { opacity: 1, duration: 2 });
+                    startTypewriter(text === "FOR<br>YOU" ? "ACCESS GRANTED. THE VAULT IS YOURS." : "MASTER OVERRIDE ACTIVE.");
                 }
             });
         }
 
+        let vaultOpen = false;
+        function toggleVault() {
+            const panel = document.getElementById('vault-panel');
+            vaultOpen = !vaultOpen;
+            panel.style.display = vaultOpen ? 'flex' : 'none';
+        }
+
+        function loadClassic() {
+            toggleVault();
+            gsap.to([title, typewriterEl], { opacity: 0, duration: 1 });
+            
+            uiLayer.style.display = 'block';
+            v1.classList.add('active-v1');
+            v1.play().catch(() => {
+                window.addEventListener('click', () => { v1.play(); }, { once: true });
+            });
+        }
+
+        // 🎵 THE MISSING MUSIC LOGIC (FIXED)
+        window.activateMusic = () => {
+            gsap.to(v1, { opacity: 0, duration: 2 }); // Fade out silent video
+            v1.pause();
+            
+            v2.classList.add('active-v2');
+            v2.play(); // Play music video
+            
+            uiLayer.style.opacity = 0;
+            setTimeout(() => { uiLayer.remove(); }, 1000); // Hide button after use
+        };
+
         function startTypewriter(msg) {
             let i = 0;
-            typewriterEl.innerHTML = ""; // Clear existing
+            typewriterEl.innerHTML = "";
             typewriterEl.style.opacity = 1;
             function type() {
                 if (i < msg.length) {
@@ -106,9 +164,8 @@ yling */
                     setTimeout(type, 80);
                 }
             }
-            setTimeout(type, 500); 
+            type();
         }
-
-        window.activateMusic = () => {
-            v1.classList.remove('active-v1');
-            setTimeout(() =>
+    </script>
+</body>
+</html>

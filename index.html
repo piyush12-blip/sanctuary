@@ -5,28 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow, noarchive, noimageindex, nosnippet">
     <title>Who Knows | Sanctuary</title>
+    
+    <!-- Core Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <style>
-        :root { --accent: #7000ff; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; color: #fff; font-family: 'Helvetica', sans-serif; overflow: hidden; user-select: none; }
+    <script src="https://cdn.jsdelivr.net/gh/v0id-0/webgl-fluid-simulation/dist/webgl-fluid.js"></script>
 
+    <style>
+        :root { 
+            --accent: #7000ff; 
+            --bg: #000000;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background: var(--bg); 
+            color: #fff; 
+            font-family: 'Helvetica', sans-serif; 
+            overflow: hidden; 
+            user-select: none; 
+        }
+
+        /* --- Organimo Fluid Canvas --- */
+        canvas#fluid {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: auto;
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+
+        /* --- Grain Effect --- */
         .grain {
             position: fixed; inset: 0; z-index: 90; pointer-events: none;
             background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_element_noise_fbm.png');
             opacity: 0.04; animation: noise 0.2s infinite;
         }
-        @keyframes noise { 0%, 100% { transform: translate(0,0); } 10% { transform: translate(-1%,-1%); } }
+        @keyframes noise { 
+            0%, 100% { transform: translate(0,0); } 
+            10% { transform: translate(-1%,-1%); } 
+        }
 
+        /* --- Background Videos --- */
         #bg-container { position: fixed; inset: 0; z-index: -1; background: #000; }
         video { 
             position: absolute; width: 100%; height: 100%; object-fit: cover; 
-            opacity: 0; /* Handled by GSAP now */
+            opacity: 0;
         }
 
+        /* --- Preloader / Boot --- */
+        #boot-screen {
+            position: fixed; inset: 0; z-index: 500; background: #000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #boot-status { font-family: monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); margin-bottom: 20px; }
+        .boot-btn {
+            background: none; border: 1px solid var(--accent); color: var(--accent);
+            padding: 12px 30px; font-family: monospace; font-size: 11px;
+            letter-spacing: 2px; cursor: pointer; margin: 10px; border-radius: 2px;
+            transition: 0.3s;
+        }
+        .boot-btn:hover { background: var(--accent); color: #000; }
+
+        /* --- Login System --- */
         #login { 
             position: fixed; inset: 0; z-index: 100; background: #000; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            display: none; flex-direction: column; align-items: center; justify-content: center; 
         }
         #status-text { font-family: monospace; color: var(--accent); letter-spacing: 5px; margin-bottom: 20px; font-size: 12px; }
         input { 
@@ -35,6 +80,7 @@
         }
         input:focus { border-bottom-color: var(--accent); }
 
+        /* --- Vault UI --- */
         #vault-btn { position: fixed; top: 30px; right: 40px; font-size: 30px; color: var(--accent); cursor: pointer; z-index: 200; display: none; }
         #vault-panel {
             position: fixed; top: 80px; right: 40px; background: rgba(0, 0, 0, 0.9); border: 1px solid var(--accent);
@@ -44,6 +90,7 @@
         .vault-option { background: none; border: none; color: #fff; font-family: monospace; font-size: 11px; cursor: pointer; padding: 10px; text-align: left; opacity: 0.7; transition: 0.3s; }
         .vault-option:hover { opacity: 1; color: var(--accent); }
 
+        /* --- Main UI Layer --- */
         #ui-layer { position: fixed; bottom: 40px; width: 100%; text-align: center; display: none; z-index: 150; }
         .music-btn { 
             background: none; border: 1px solid var(--accent); color: var(--accent); 
@@ -58,7 +105,18 @@
 <body oncontextmenu="return false;">
 
     <div class="grain"></div>
+    <canvas id="fluid"></canvas>
 
+    <!-- Step 1: Boot/Choice -->
+    <div id="boot-screen">
+        <p id="boot-status">INITIALIZING SANCTUARY_OS</p>
+        <div id="boot-controls">
+            <button class="boot-btn" onclick="startApp(false)">LITE VERSION</button>
+            <button class="boot-btn" onclick="startApp(true)">ELITE MODE (FLUIDS)</button>
+        </div>
+    </div>
+
+    <!-- Step 2: Login -->
     <div id="login">
         <p id="status-text">SYSTEM_ENTRY</p>
         <input type="password" id="pass" maxlength="4" autocomplete="off" placeholder="----">
@@ -90,8 +148,41 @@
         const uiLayer = document.getElementById('ui-layer');
         const loginScreen = document.getElementById('login');
         const typewriterEl = document.getElementById('typewriter');
+        const bootScreen = document.getElementById('boot-screen');
+        const fluidCanvas = document.getElementById('fluid');
 
-        document.onkeydown = (e) => { if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && [73, 67, 74].includes(e.keyCode)) || (e.ctrlKey && e.keyCode == 85)) return false; };
+        // Security
+        document.onkeydown = (e) => { 
+            if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && [73, 67, 74].includes(e.keyCode)) || (e.ctrlKey && e.keyCode === 85)) return false; 
+        };
+
+        // Initialize Fluid Simulation (Organimo Style)
+        function initFluid() {
+            fluidCanvas.style.opacity = "1";
+            WebGLFluid(fluidCanvas, {
+                IMMEDIATE: true,
+                TRIGGER: 'hover',
+                SIM_RESOLUTION: 128,
+                DYE_RESOLUTION: 512,
+                DENSITY_DISSIPATION: 1.0,
+                VELOCITY_DISSIPATION: 0.2,
+                PRESSURE: 0.8,
+                CURL: 30,
+                SPLAT_RADIUS: 0.25,
+                COLORFUL: false,
+                COLOR: { r: 0.44, g: 0.0, b: 1.0 }, // #7000ff
+            });
+        }
+
+        // Start App
+        function startApp(elite) {
+            if (elite) initFluid();
+            gsap.to(bootScreen, { opacity: 0, duration: 1, onComplete: () => {
+                bootScreen.style.display = 'none';
+                loginScreen.style.display = 'flex';
+                passField.focus();
+            }});
+        }
 
         passField.addEventListener('input', (e) => {
             const code = e.target.value;
@@ -126,7 +217,6 @@
             gsap.to([title, typewriterEl], { opacity: 0, duration: 1 });
             uiLayer.style.display = 'block';
             
-            // Initial Fade In of Video 1
             gsap.to(v1, { opacity: 0.4, duration: 2 });
             v1.play().catch(() => {
                 window.addEventListener('click', () => { v1.play(); }, { once: true });
@@ -134,15 +224,9 @@
         }
 
         window.activateMusic = () => {
-            // THE CROSSFADE FIX:
-            // Fade out v1 and pause it when done
             gsap.to(v1, { opacity: 0, duration: 1.5, onComplete: () => v1.pause() });
-            
-            // Fade in v2 (music mode)
             gsap.to(v2, { opacity: 0.8, duration: 2 });
             v2.play();
-            
-            // Remove the UI button smoothly
             gsap.to(uiLayer, { opacity: 0, duration: 1, onComplete: () => uiLayer.remove() });
         };
 

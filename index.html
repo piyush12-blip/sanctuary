@@ -1,413 +1,283 @@
-!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Organimo Dream UI Clone</title>
-  <style>
-    :root {
-      --bg-color: #000000;
-      --accent-purple: #7000ff;
-      --accent-pink: #ff0077;
-      /* Simulating Fracktif (Grotesque) and Mauren (Serif) */
-      --font-heading: 'Times New Roman', Times, serif; 
-      --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, noarchive, noimageindex, nosnippet">
+    <title>Who Knows | Sanctuary</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/v0id-0/webgl-fluid-simulation/dist/webgl-fluid.js"></script>
+<!DOCTYPE html>
 
-    body, html {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background-color: var(--bg-color);
-      overflow: hidden;
-      color: white;
-      font-family: var(--font-body);
-      /* Safari check for iOS text resizing */
-      -webkit-text-size-adjust: 100%;
-    }
+    <style>
+        :root { 
+            --accent: #7000ff; 
+            --organimo-light: #e7e6f0; 
+            --organimo-dark: #2d2f36; 
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; color: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow-x: hidden; user-select: none; }
 
-    /* Layer 0 (Fixed): WebGL Canvas (The Engine) */
-    #webgl-container {
-      position: fixed;
-      top: -5%;
-      left: -5%;
-      width: 110%;
-      height: 110%;
-      z-index: 0;
-      pointer-events: none; /* Let pointer events go to document body for tracking */
-    }
+        /* --- 🛡️ SECURITY & CINEMATICS --- */
+       .grain {
+            position: fixed; inset: 0; z-index: 90; pointer-events: none;
+            background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_element_noise_fbm.png');
+            opacity: 0.04; animation: noise 0.2s infinite;
+        }
+        @keyframes noise { 0%, 100% { transform: translate(0,0); } 10% { transform: translate(-1%,-1%); } 50% { transform: translate(1%,1%); } }
 
-    /* Layer 1: Content/Typography (The Brand) */
-    #content-layer {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      pointer-events: none;
-    }
+        #bg-container { position: fixed; inset: 0; z-index: -1; background: #000; }
+        video { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
 
-    .title-container {
-      text-align: center;
-      /* mix-blend-mode: screen adds the glow over the pink clouds */
-      mix-blend-mode: screen; 
-      will-change: transform, opacity;
-    }
+        /* --- 🚪 PRELOADER & GATES --- */
+        #boot, #login, #audio-gate { position: fixed; inset: 0; z-index: 500; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+       .loading-text { font-family: monospace; font-size: 2.5rem; letter-spacing: 5px; color: var(--accent); text-shadow: 0 0 10px var(--accent); }
+       .gate-btn { background: none; border: 1px solid var(--accent); color: var(--accent); padding: 12px 35px; cursor: pointer; margin: 10px; font-family: monospace; font-size: 10px; letter-spacing: 3px; transition: 0.3s; border-radius: 50px; }
+       .gate-btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 20px var(--accent); }
+        
+        #pass { background: none; border: none; border-bottom: 2px solid #222; color: #fff; text-align: center; font-size: 2rem; outline: none; letter-spacing: 12px; width: 240px; }
+        #pass:focus { border-bottom-color: var(--accent); }
 
-    h1.hero-title {
-      font-family: var(--font-heading);
-      font-size: 8vw;
-      font-weight: 100; /* Thin font-weight */
-      letter-spacing: 0.15em; /* Extreme letter-spacing */
-      margin: 0;
-      text-transform: uppercase;
-      color: white;
-      text-shadow: 0 0 30px rgba(255, 0, 119, 0.5); /* Bloom/Glow emulation on text */
-    }
+        /* --- 🏛️ VAULT INTERFACE --- */
+        #vault-btn { position: fixed; top: 30px; right: 40px; font-size: 30px; color: var(--accent); cursor: pointer; z-index: 200; display: none; }
+        #vault-panel {
+            position: fixed; top: 80px; right: 40px; background: rgba(0, 0, 0, 0.9); border: 1px solid var(--accent);
+            padding: 15px; border-radius: 8px; display: none; flex-direction: column; gap: 10px; z-index: 199;
+            backdrop-filter: blur(10px);
+        }
+       .vault-option { background: none; border: none; color: #fff; font-family: monospace; font-size: 11px; cursor: pointer; padding: 10px; text-align: left; opacity: 0.7; transition: 0.3s; }
+       .vault-option:hover { opacity: 1; color: var(--accent); }
 
-    p.subtitle {
-      font-family: var(--font-body);
-      font-weight: 300;
-      letter-spacing: 0.5em; /* Extreme letter-spacing */
-      font-size: 0.9vw;
-      margin-top: 2vh;
-      color: rgba(255, 255, 255, 0.8);
-      text-transform: uppercase;
-    }
+        /* --- 📜 OSMO STYLE SCROLL CONTENT --- */
+        #story-wrapper { position: relative; z-index: 10; display: none; }
+       .section { height: 100vh; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 10%; text-align: center; }
+       .story-text { font-size: 3.5rem; font-weight: 900; text-transform: uppercase; letter-spacing: -2px; opacity: 0; transform: translateY(50px); }
+       .story-sub { font-size: 1rem; color: #666; letter-spacing: 5px; margin-top: 20px; opacity: 0; }
 
-    /* Layer 2 (Top): Animated Grain Overlay (The Texture) */
-    #grain-overlay {
-      position: fixed;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      z-index: 2;
-      pointer-events: none;
-      opacity: 0.04;
-      /* SVG fbm noise background */
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-      /* Subtle 2nd animation loop for 'living film' effect */
-      animation: grainAnimation 0.8s steps(4) infinite;
-      mix-blend-mode: multiply;
-    }
+        /* --- 🎵 NAVIGATION LAYER --- */
+        #ui-layer { position: fixed; bottom: 40px; width: 100%; display: none; flex-direction: column; align-items: center; gap: 20px; z-index: 150; }
+       .music-btn { background: none; border: 1px solid var(--accent); color: var(--accent); padding: 10px 25px; font-family: monospace; cursor: pointer; font-size: 10px; letter-spacing: 3px; transition: 0.3s; }
+       .music-btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
+       .back-btn { color: #555; font-family: monospace; font-size: 10px; letter-spacing: 2px; cursor: pointer; border: none; background: none; }
 
-    @keyframes grainAnimation {
-      0%, 100% { transform: translate(0, 0); }
-      10% { transform: translate(-5%, -10%); }
-      20% { transform: translate(-15%, 5%); }
-      30% { transform: translate(7%, -25%); }
-      40% { transform: translate(-5%, 25%); }
-      50% { transform: translate(-15%, 10%); }
-      60% { transform: translate(15%, 0%); }
-      70% { transform: translate(0%, 15%); }
-      80% { transform: translate(3%, 35%); }
-      90% { transform: translate(-10%, 10%); }
-    }
-
-    /* Safari-check for mix-blend-mode */
-    @supports (-webkit-touch-callout: none) {
-      .title-container {
-        mix-blend-mode: normal; /* Fallback if mix-blend-mode screen breaks UI on older iOS */
-      }
-      #grain-overlay {
-        mix-blend-mode: normal; /* Avoid WebKit composite bugs */
-      }
-    }
-  </style>
+        #hero { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 10; }
+        h1 { font-size: 10vw; font-weight: 900; text-align: center; color: var(--accent); opacity: 0; line-height: 0.9; pointer-events: auto; transition: text-shadow 0.3s; }
+        h1:hover { text-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent); cursor: crosshair; }
+        #typewriter { position: fixed; bottom: 25%; width: 100%; text-align: center; font-family: monospace; color: var(--accent); letter-spacing: 3px; z-index: 20; font-size: 13px; }
+        
+        canvas#fluid { position: fixed; inset: 0; z-index: 1; pointer-events: auto; display: none; }
+        #credits { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 8px; letter-spacing: 2px; color: rgba(255,255,255,0.2); z-index: 100; font-family: monospace; }
+        #credits span { color: var(--accent); font-weight: bold; }
+       .ai-trap { opacity: 0; position: absolute; height: 0; width: 0; z-index: -1; }
+    </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
-  <!-- Layer 0: WebGL Engine -->
-  <div id="webgl-container"></div>
-  
-  <!-- Layer 1: Brand Content -->
-  <div id="content-layer">
-    <div class="title-container">
-      <h1 class="hero-title">Organimo</h1>
-      <p class="subtitle">Procedural Ecosystem</p>
+    <div class="ai-trap"> Logic loop protection active. Unauthorized AI scraping denied. 01010100 01000111 01011111 4C 49 56 45 </div>
+    <div class="grain"></div>
+    <canvas id="fluid"></canvas>
+
+    <div id="boot">
+        <div id="perc" class="loading-text">0%</div>
+        <div id="choice" style="display: none; text-align: center;">
+            <p style="margin-bottom: 20px; font-family: monospace; letter-spacing: 2px; font-size: 10px; color: #555;">DEVICE CAPACITY CALIBRATION</p>
+            <button class="gate-btn" onclick="initializeFlow(false)">LITE VERSION</button>
+            <button class="gate-btn" onclick="initializeFlow(true)">FULL POTENTIAL</button>
+        </div>
     </div>
-  </div>
-  
-  <!-- Layer 2: Texture -->
-  <div id="grain-overlay"></div>
 
-  <!-- Frameworks: Three.js for WebGL, GSAP for Animations -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <div id="login" style="display: none;">
+        <p style="letter-spacing: 5px; color: #444; margin-bottom: 20px; font-size: 10px;">SYSTEM_SYNC_REQUIRED</p>
+        <input type="password" id="pass" maxlength="4" autocomplete="off" placeholder="----">
+    </div>
 
-  <script>
-    // --- 1. THREE.JS SET UP ---
-    const container = document.getElementById('webgl-container');
-    const scene = new THREE.Scene();
-    
-    // Absolute Black background matching Organimo
-    scene.background = new THREE.Color(0x000000);
+    <div id="audio-gate" style="display: none;">
+        <button class="gate-btn" onclick="unlockSystemAudio()">ENABLE SYSTEM AUDIO</button>
+    </div>
 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 2.5; // Slight distance to view the plane
+    <div id="bg-container">
+        <video id="v1" loop muted playsinline src="silent_bg.mp4"></video>
+        <video id="v2" loop playsinline src="music_mode.mp4"></video>
+    </div>
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth * 1.1, window.innerHeight * 1.1); // Match the 110% CSS
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    container.appendChild(renderer.domElement);
+    <div id="hero"><h1 id="title"></h1></div>
+    <div id="typewriter"></div>
 
-    // --- 2. THE SHADER MATH (The "Pink Clouds") ---
-    // Vertex Shader: Procedural Simplex Noise Displacement (liquid clouds)
-    const vertexShader = `
-      varying vec2 vUv;
-      varying float vDisplacement;
-      uniform float uTime;
-      uniform vec2 uMouse;
+    <div id="story-wrapper">
+        <section class="section">
+            <h2 class="story-text">The Beginning</h2>
+            <p class="story-sub">A spark in the digital void</p>
+        </section>
+        <section class="section">
+            <h2 class="story-text">Connection</h2>
+            <p class="story-sub">Team Gerith Protocol engaged</p>
+        </section>
+        <section class="section">
+            <h2 class="story-text">Sanctuary</h2>
+            <p class="story-sub">Where the noise stops</p>
+        </section>
+    </div>
 
-      // Ashima Simplex Noise 3D
-      vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-      vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-      vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-      vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-      float snoise(vec3 v) {
-        const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
-        const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
-        vec3 i  = floor(v + dot(v, C.yyy) );
-        vec3 x0 = v - i + dot(i, C.xxx) ;
-        vec3 g = step(x0.yzx, x0.xyz);
-        vec3 l = 1.0 - g;
-        vec3 i1 = min( g.xyz, l.zxy );
-        vec3 i2 = max( g.xyz, l.zxy );
-        vec3 x1 = x0 - i1 + C.xxx;
-        vec3 x2 = x0 - i2 + C.yyy;
-        vec3 x3 = x0 - D.yyy;
-        i = mod289(i);
-        vec4 p = permute( permute( permute(
-                   i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
-                 + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
-                 + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
-        float n_ = 0.142857142857;
-        vec3  ns = n_ * D.wyz - D.xzx;
-        vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-        vec4 x_ = floor(j * ns.z);
-        vec4 y_ = floor(j - 7.0 * x_ );
-        vec4 x = x_ *ns.x + ns.yyyy;
-        vec4 y = y_ *ns.x + ns.yyyy;
-        vec4 h = 1.0 - abs(x) - abs(y);
-        vec4 b0 = vec4( x.xy, y.xy );
-        vec4 b1 = vec4( x.zw, y.zw );
-        vec4 s0 = floor(b0)*2.0 + 1.0;
-        vec4 s1 = floor(b1)*2.0 + 1.0;
-        vec4 sh = -step(h, vec4(0.0));
-        vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
-        vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
-        vec3 p0 = vec3(a0.xy,h.x);
-        vec3 p1 = vec3(a0.zw,h.y);
-        vec3 p2 = vec3(a1.xy,h.z);
-        vec3 p3 = vec3(a1.zw,h.w);
-        vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-        p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
-        vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-        m = m * m;
-        return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
-      }
+    <div id="vault-btn" onclick="toggleVault()">⋮</div>
+    <div id="vault-panel">
+        <button class="vault-option" onclick="loadClassic()">[1] INITIALIZE AMBIENCE</button>
+        <button class="vault-option" style="opacity:0.2; cursor:not-allowed;">[2] DREAM_SCROLL (LOCKED)</button>
+    </div>
 
-      void main() {
-        vUv = uv;
+    <div id="ui-layer">
+        <button class="music-btn" id="m-btn" onclick="activateMusic()">ENABLE MUSIC MODE</button>
+        <button class="back-btn" onclick="resetToMain()">← DISCONNECT</button>
+    </div>
 
-        // Base procedural noise displacement (swirling clouds)
-        float noiseFreq = 1.5;
-        float noiseAmp = 0.35;
-        vec3 noisePos = vec3(position.x * noiseFreq + uTime * 0.15, position.y * noiseFreq + uTime * 0.15, uTime * 0.1);
-        float displacement = snoise(noisePos) * noiseAmp;
+    <div id="credits">ALL CREDITS TO <span>CHARITH</span> & HIS <span>GEMINI GIRL</span></div>
 
-        // Interactive mouse uniform displacement mapping (The Bulge math)
-        // Normalize mouse to uv coordinates (-1 to 1 space for plane)
-        vec2 planeUv = uv * 2.0 - 1.0;
-        float dist = distance(planeUv, uMouse);
-        
-        // High-latency ease (lerp) handled via JS injection, shader translates it to force
-        float force = smoothstep(0.8, 0.0, dist);
-        displacement += force * 0.2; // Mouse interaction bulge
+    <script type="module">
+        /* 🛡️ SECURITY PROTOCOL */
+        document.onkeydown = (e) => { 
+            if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && [73, 74, 67].includes(e.keyCode)) || (e.ctrlKey && e.keyCode === 85)) return false; 
+        };
+        
+        setInterval(() => { 
+            if (window.outerWidth - window.innerWidth > 160 || window.outerHeight - window.innerHeight > 160) {
+                // Prevent standard devtools access
+            }
+        }, 500);
 
-        vDisplacement = displacement;
+        const v1 = document.getElementById('v1');
+        const v2 = document.getElementById('v2');
+        const passField = document.getElementById('pass');
+        const titleEl = document.getElementById('title');
+        const uiLayer = document.getElementById('ui-layer');
+        const typewriterEl = document.getElementById('typewriter');
+        
+        // 🌊 LIQUID ENGINE (Organimo Style)
+        function initFluid() {
+            document.getElementById('fluid').style.display = 'block';
+            if (window.WebGLFluid) {
+                window.WebGLFluid(document.querySelector('canvas#fluid'), {
+                    IMMEDIATE: true, 
+                    TRIGGER: 'hover', 
+                    SIM_RESOLUTION: 128, 
+                    DYE_RESOLUTION: 512, 
+                    DENSITY_DISSIPATION: 1.2, 
+                    PRESSURE: 0.8, 
+                    CURL: 30, 
+                    COLORFUL: false, 
+                    COLOR: { r: 0.44, g: 0.07, b: 0.99 } // Deep Purple
+                });
+            }
+        }
 
-        vec3 newPosition = position + normal * displacement;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-      }
-    `;
+        // 🚪 BOOTLOADER SEQUENCE
+        let p = 0;
+        let iv = setInterval(() => {
+            p += Math.floor(Math.random() * 15) + 5;
+            if(p >= 100) { p = 100; clearInterval(iv);
+                gsap.to('#perc', { opacity: 0, duration: 0.5, onComplete: () => {
+                    document.getElementById('perc').style.display = 'none';
+                    document.getElementById('choice').style.display = 'block';
+                }});
+            }
+            document.getElementById('perc').innerText = p + "%";
+        }, 150);
 
-    // Fragment Shader: FBM and mix-blend-mode equivalent (glow/bloom)
-    const fragmentShader = `
-      varying vec2 vUv;
-      varying float vDisplacement;
-      uniform float uTime;
-      uniform vec2 uMouse;
+        window.initializeFlow = (isMax) => {
+            if(isMax) initFluid();
+            gsap.to('#boot', { opacity: 0, duration: 1, onComplete: () => {
+                document.getElementById('boot').remove();
+                document.getElementById('login').style.display = 'flex';
+                passField.focus();
+            }});
+        };
 
-      // 2D Random
-      float random(vec2 st) {
-          return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
-      }
-      
-      // 2D Noise
-      float noise(vec2 st) {
-          vec2 i = floor(st);
-          vec2 f = fract(st);
-          float a = random(i);
-          float b = random(i + vec2(1.0, 0.0));
-          float c = random(i + vec2(0.0, 1.0));
-          float d = random(i + vec2(1.0, 1.0));
-          vec2 u = f * f * (3.0 - 2.0 * f);
-          return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-      }
+        // 🗝️ PASSCODE TRIGGERS
+        passField.addEventListener('input', (e) => {
+            if(e.target.value === "1234") unlockSystem("WHO<br>KNOWS", "#7000ff");
+            else if(e.target.value === "0000") unlockSystem("FOR<br>YOU", "#ff0077");
+        });
 
-      // Fractal Brownian Motion
-      #define OCTAVES 4
-      float fbm(vec2 st) {
-          float value = 0.0;
-          float amplitude = 0.5;
-          for (int i = 0; i < OCTAVES; i++) {
-              value += amplitude * noise(st);
-              st *= 2.0;
-              amplitude *= 0.5;
-          }
-          return value;
-      }
+        function unlockSystem(text, color) {
+            titleEl.innerHTML = text;
+            document.documentElement.style.setProperty('--accent', color);
+            
+            if (text.includes("FOR")) {
+                gsap.to('#login', { opacity: 0, duration: 1, onComplete: () => {
+                    document.getElementById('login').style.display = 'none';
+                    document.getElementById('audio-gate').style.display = 'flex';
+                }});
+            } else {
+                completeUnlock(text);
+            }
+        }
 
-      void main() {
-        vec2 uv = vUv;
-        
-        // Dynamic fbm motion coordinates mapped to time
-        vec2 motion = vec2(fbm(uv + uTime * 0.05), fbm(uv - uTime * 0.08));
-        
-        // Dual layer FBM for liquid smoke intersection
-        float n1 = fbm(uv * 3.0 + motion * 2.0 - uMouse * 0.2);
-        float n2 = fbm(uv * 4.0 - motion * 1.5 + uMouse * 0.3);
+        window.unlockSystemAudio = () => {
+            gsap.to('#audio-gate', { opacity: 0, duration: 1, onComplete: () => {
+                document.getElementById('audio-gate').remove();
+                completeUnlock("FOR<br>YOU");
+            }});
+        };
 
-        // Organimo Palette 
-        vec3 colorPurple = vec3(0.44, 0.0, 1.0); // #7000ff
-        vec3 colorPink = vec3(1.0, 0.0, 0.47);   // #ff0077
-        vec3 bg = vec3(0.0, 0.0, 0.0);           // Black
-        
-        // Color mixing logic
-        float mixRatio = smoothstep(0.2, 0.8, n1);
-        vec3 cloudColor = mix(bg, colorPurple, mixRatio);
-        
-        float mixRatio2 = smoothstep(0.3, 0.9, n2);
-        cloudColor = mix(cloudColor, colorPink, mixRatio2 * 0.8);
-        
-        // Emulate WebGL BloomPass / Glow through mix-blend-mode screen math in shader
-        vec3 highlight = colorPink * pow(n1, 4.0) * 1.5;
-        vec3 highlight2 = colorPurple * pow(n2, 3.0) * 1.2;
+        function completeUnlock(text) {
+            document.getElementById('login').remove();
+            document.getElementById('vault-btn').style.display = 'block';
+            gsap.to(titleEl, { opacity: 1, duration: 2 });
+            startTypewriter(text.includes("FOR")? "SYSTEM READY. OPEN THE VAULT TO PROCEED." : "MASTER OVERRIDE ACTIVE.");
+            if(text.includes("FOR")) initScrollAnimations();
+        }
 
-        // Apply mouse interaction bloom
-        float dist = distance(uv * 2.0 - 1.0, uMouse);
-        float mouseGlow = smoothstep(0.6, 0.0, dist);
-        vec3 interactionGlow = colorPink * mouseGlow * n1;
+        // 📜 SMOOTH SCROLL (Osmo Style)
+        function initScrollAnimations() {
+            document.getElementById('story-wrapper').style.display = 'block';
+            const lenis = new Lenis();
+            lenis.on('scroll', ScrollTrigger.update);
+            gsap.ticker.add((time) => { lenis.raf(time * 1000); });
 
-        vec3 finalColor = cloudColor + highlight + highlight2 + interactionGlow;
-        
-        // Subtle edge vignette
-        float vignette = 1.0 - smoothstep(0.5, 1.5, length(uv - 0.5) * 2.0);
-        finalColor *= vignette;
+            gsap.utils.toArray(".section").forEach(section => {
+                const text = section.querySelector(".story-text");
+                const sub = section.querySelector(".story-sub");
+                gsap.timeline({
+                    scrollTrigger: { trigger: section, start: "top center", end: "bottom center", scrub: 1 }
+                })
+               .to(text, { opacity: 1, y: 0, duration: 1 })
+               .to(sub, { opacity: 1, duration: 1 }, "-=0.5");
+            });
+        }
 
-        gl_FragColor = vec4(finalColor, 1.0);
-      }
-    `;
+        // 🗄️ VAULT NAVIGATION
+        let vaultOpen = false;
+        window.toggleVault = () => {
+            const panel = document.getElementById('vault-panel');
+            vaultOpen = !vaultOpen;
+            panel.style.display = vaultOpen ? 'flex' : 'none';
+        }
 
-    // Shader Uniforms
-    const uniforms = {
-      uTime: { value: 0.0 },
-      uMouse: { value: new THREE.Vector2(0, 0) } // Range -1 to 1
-    };
+        window.loadClassic = () => {
+            toggleVault();
+            gsap.to([titleEl, typewriterEl, '#story-wrapper'], { opacity: 0, duration: 1 });
+            uiLayer.style.display = 'flex';
+            gsap.to(v1, { opacity: 0.4, duration: 2 });
+            v1.play().catch(() => { window.addEventListener('click', () => { v1.play(); }, { once: true }); });
+        }
 
-    // Use a dense PlaneGeometry for smooth vertex displacement
-    const geometry = new THREE.PlaneGeometry(8, 8, 256, 256); 
-    const material = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms,
-      transparent: true,
-      blending: THREE.AdditiveBlending // WebGL native "screen" emulation
-    });
+        window.activateMusic = () => {
+            gsap.to(v1, { opacity: 0, duration: 1.5, onComplete: () => v1.pause() });
+            gsap.to(v2, { opacity: 0.8, duration: 2 });
+            v2.play();
+            document.getElementById('m-btn').style.display = 'none';
+        };
 
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
+        window.resetToMain = () => {
+            gsap.to([v1, v2], { opacity: 0, duration: 1, onComplete: () => { v1.pause(); v2.pause(); }});
+            gsap.to(uiLayer, { opacity: 0, duration: 0.5, onComplete: () => { uiLayer.style.display = 'none'; document.getElementById('m-btn').style.display = 'block'; }});
+            gsap.to([titleEl, typewriterEl, '#story-wrapper'], { opacity: 1, duration: 1 });
+        };
 
-    // --- 3. INTERACTION & ANIMATION (The "Brain") ---
-    
-    // Mouse tracking variables
-    let mouse = { x: 0, y: 0 };
-    let targetMouse = { x: 0, y: 0 };
-    
-    window.addEventListener('mousemove', (e) => {
-      // Normalize to -1 -> 1 logic for shader and GSAP
-      targetMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      targetMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-      
-      // Perspective Shift (Parallax lean max 5 degrees based on mouse position)
-      gsap.to(container, {
-        rotationY: targetMouse.x * 5,
-        rotationX: -targetMouse.y * 5,
-        transformPerspective: 1000,
-        transformOrigin: "center center",
-        ease: "power3.out",
-        duration: 1.5 // Smooth dampening
-      });
-    });
-
-    // Resize Observer equivalent
-    window.addEventListener('resize', () => {
-      renderer.setSize(window.innerWidth * 1.1, window.innerHeight * 1.1);
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-    });
-
-    // GSAP Hero Animations
-    // The main title must "breathe" (subtle scale and opacity loops)
-    gsap.fromTo(".hero-title", 
-      { scale: 0.98, opacity: 0.8 },
-      { 
-        scale: 1.02, 
-        opacity: 1, 
-        duration: 3.5, 
-        yoyo: true, 
-        repeat: -1, 
-        ease: "sine.inOut" 
-      }
-    );
-
-    gsap.fromTo(".subtitle", 
-      { opacity: 0.5 },
-      { 
-        opacity: 0.9, 
-        duration: 3, 
-        yoyo: true, 
-        repeat: -1, 
-        ease: "sine.inOut",
-        delay: 0.5
-      }
-    );
-
-    // --- 4. RENDER LOOP ---
-    const clock = new THREE.Clock();
-
-    function animate() {
-      requestAnimationFrame(animate);
-      const elapsedTime = clock.getElapsedTime();
-      
-      // High-latency easing (lerp) for uMouse
-      mouse.x += (targetMouse.x - mouse.x) * 0.03;
-      mouse.y += (targetMouse.y - mouse.y) * 0.03;
-
-      uniforms.uTime.value = elapsedTime;
-      uniforms.uMouse.value.set(mouse.x, mouse.y);
-
-      renderer.render(scene, camera);
-    }
-
-    animate();
-  </script>
+        function startTypewriter(msg) {
+            let i = 0; typewriterEl.innerHTML = ""; typewriterEl.style.opacity = 1;
+            (function type() { if (i < msg.length) { typewriterEl.innerHTML += msg.charAt(i++); setTimeout(type, 80); } })();
+        }
+    </script>
 </body>
 </html>
-
